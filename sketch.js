@@ -1,6 +1,12 @@
 let fish;
 let waveOffset = 0;
 let bubbles = [];
+let fishYSpeed = 0;
+let gravity = 0.5;
+let jumpStrength = -10;
+let seaweeds = [];
+let lives = 3;
+
 
 function setup() {
   new Canvas(500, 500);
@@ -27,7 +33,13 @@ function setup() {
 for (let i = 0; i < 10; i++) {
   bubbles.push(new Bubble(random(0, width), random(height - 100, height), random(1, 3)));
   }
+
+   // Create seaweed objects
+   for (let i = 0; i < 5; i++) {
+    seaweeds.push(new Seaweed(random(0, width), height - random(50, 150)));
+  }
 }
+
 
 
 
@@ -44,12 +56,62 @@ function draw() {
   }
 
 
+  // Make the fish jump when the up arrow key is pressed
+  if (keyIsDown(UP_ARROW)) {
+    fishYSpeed = jumpStrength; // Apply the jump strength when the up arrow is pressed
+  }
+
+  // Apply gravity to make the fish fall down after jumping
+  fishYSpeed += gravity;
+
+  // Update fish's y position
+  fish.y += fishYSpeed;
+
+  // Prevent the fish from going below the water surface (bottom of the canvas)
+  if (fish.y > height - 25) {
+    fish.y = height - 25;
+    fishYSpeed = 0; // Stop downward movement when it hits the ground
+  }
+
+
 // Update and display the bubbles
 for (let bubble of bubbles) {
   bubble.update();
   bubble.display();
   }
+
+  // Update and display seaweed
+  for (let seaweed of seaweeds) {
+    seaweed.update();
+    seaweed.display();
+  }
+   // Draw the lives in the top left corner
+   drawLives();
 }
+
+// Function to draw the lives in the top left corner
+function drawLives() {
+  fill(255, 0, 0);
+  noStroke();
+  
+  for (let i = 0; i < lives; i++) {
+    // Draw heart shapes to represent lives
+    heart(30 + i * 30, 30, 20); // Position hearts with spacing
+  }
+}
+
+// Function to draw a heart shape
+function heart(x, y, size) {
+  beginShape();
+  vertex(x, y);
+  bezierVertex(x - size / 2, y - size / 2, x - size, y + size / 2, x, y + size);
+  bezierVertex(x + size, y + size / 2, x + size / 2, y - size / 2, x, y);
+  endShape(CLOSE);
+} 
+
+
+
+
 
 
 // Function to draw waves in the background
@@ -100,7 +162,30 @@ class Bubble {
   }
 }
 
+// Seaweed class for creating seaweed objects
+class Seaweed {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.height = random(50, 150); // Random height for the seaweed
+  }
 
+  // Update the seaweed's position (falling effect)
+  update() {
+    this.y += 1; // Move downwards to simulate swimming past
+    if (this.y > height) {
+      this.y = height - random(50, 150); // Reset to a new position
+      this.x = random(0, width); // Random x position
+    }
+  }
+
+  // Display the seaweed
+  display() {
+    stroke(0, 128, 0); // Green color for seaweed
+    strokeWeight(4);
+    line(this.x, this.y, this.x, this.y + this.height); // Draw vertical seaweed lines
+  }
+}
 
 
 
