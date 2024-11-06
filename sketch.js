@@ -6,11 +6,13 @@ let gravity = 0.5;
 let jumpStrength = -10;
 let seaweeds = [];
 let lives = 3;
-
+let dayNightCycleDuration = 20000; // 20 seconds
+let startTime;
 
 function setup() {
   new Canvas(500, 500);
   displayMode('centered');
+  startTime = millis(); // Initialize the start time
 
   // Create the fish sprite
   fish = new Sprite();
@@ -28,25 +30,23 @@ function setup() {
     ellipse(16, -5, 2, 2); // Pupil
   };
 
-
-// Create bubbles at random positions
-for (let i = 0; i < 10; i++) {
-  bubbles.push(new Bubble(random(0, width), random(height - 100, height), random(1, 3)));
+  // Create bubbles at random positions
+  for (let i = 0; i < 10; i++) {
+    bubbles.push(new Bubble(random(0, width), random(height - 100, height), random(1, 3)));
   }
 
-   // Create seaweed objects
-   for (let i = 0; i < 5; i++) {
+  // Create seaweed objects
+  for (let i = 0; i < 5; i++) {
     seaweeds.push(new Seaweed(random(0, width), height - random(50, 150)));
   }
 }
 
-
-
-
 function draw() {
-  background('skyblue');
+  updateBackground(); // Update background color based on the day-night cycle
 
-  // draw waves in background
+  drawSun();
+  drawSand();
+  // Draw waves in the background
   drawWaves();
 
   // Make the fish move towards the mouse when clicked
@@ -54,7 +54,6 @@ function draw() {
     fish.speed = 10;
     fish.moveTo(mouse);
   }
-
 
   // Make the fish jump when the up arrow key is pressed
   if (keyIsDown(UP_ARROW)) {
@@ -73,21 +72,65 @@ function draw() {
     fishYSpeed = 0; // Stop downward movement when it hits the ground
   }
 
+  // Update and display the bubbles
+  for (let bubble of bubbles) {
+    bubble.update();
+    bubble.display();
 
-// Update and display the bubbles
-for (let bubble of bubbles) {
-  bubble.update();
-  bubble.display();
   }
+
+  function drawSand() {
+    noStroke();
+    fill(194, 178, 128); // Sand color
+    rect(0, height - 50, width, 50); // Draw a rectangle at the bottom
+  }
+  
 
   // Update and display seaweed
   for (let seaweed of seaweeds) {
     seaweed.update();
     seaweed.display();
   }
-   // Draw the lives in the top left corner
-   drawLives();
+
+  // Draw the lives in the top left corner
+  drawLives();
 }
+
+// Function to draw the sun in the background
+function drawSun() {
+  let elapsed = millis() - startTime;
+  let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
+  // Position the sun higher along an arc in the sky
+  let sunX = width * cycleProgress;
+  let sunY = map(sin(cycleProgress * PI), 0, 1, height / 4, height / 8); // Higher arc for the sun
+
+
+  // Color changes from bright yellow (day) to darker orange (evening)
+  let sunColor = color(255, map(cycleProgress, 0, 1, 200, 100), 0);
+
+  noStroke();
+  fill(sunColor);
+  ellipse(sunX, sunY, 60, 60); // Draw the sun
+}
+
+
+
+
+// Function to update the background color based on the day-night cycle
+  
+
+  function updateBackground() {
+    let elapsed = millis() - startTime;
+    let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
+  
+    // Map `colorValue` to transition between light blue (day) and dark blue (night)
+    let colorValue = map(sin(cycleProgress * TWO_PI), -1, 1, 30, 150);
+  
+    // Set background color using colorValue, with blue tones for day and night effect
+    background(colorValue, colorValue + 50, 255); // Light blue to dark blue transition
+  }  
+
+
 
 // Function to draw the lives in the top left corner
 function drawLives() {
@@ -109,22 +152,17 @@ function heart(x, y, size) {
   endShape(CLOSE);
 } 
 
-
-
-
-
-
 // Function to draw waves in the background
-function drawWaves() { // <-- Added function
+function drawWaves() {
   noStroke();
   fill(0, 150, 255, 100); // Semi-transparent water color
 
-  waveOffset += 0.1; // <-- Controls wave movement speed
+  waveOffset += 0.1; // Controls wave movement speed
 
   for (let y = 100; y <= height; y += 20) { // Draw multiple wave lines
     beginShape();
     for (let x = 0; x <= width; x += 20) {
-      let waveHeight = 10 * sin((x * 0.1) + waveOffset + y * 0.05); // <-- Creates wave pattern
+      let waveHeight = 10 * sin((x * 0.1) + waveOffset + y * 0.05); // Creates wave pattern
       vertex(x, y + waveHeight);
     }
     vertex(width, height);
