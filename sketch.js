@@ -1,5 +1,6 @@
 let fish;
 let waveOffset = 0;
+let bubbles = [];
 
 function setup() {
   new Canvas(500, 500);
@@ -20,7 +21,15 @@ function setup() {
     fill(0);
     ellipse(16, -5, 2, 2); // Pupil
   };
+
+
+// Create bubbles at random positions
+for (let i = 0; i < 10; i++) {
+  bubbles.push(new Bubble(random(0, width), random(height - 100, height), random(1, 3)));
+  }
 }
+
+
 
 function draw() {
   background('skyblue');
@@ -33,7 +42,15 @@ function draw() {
     fish.speed = 10;
     fish.moveTo(mouse);
   }
+
+
+// Update and display the bubbles
+for (let bubble of bubbles) {
+  bubble.update();
+  bubble.display();
+  }
 }
+
 
 // Function to draw waves in the background
 function drawWaves() { // <-- Added function
@@ -53,3 +70,44 @@ function drawWaves() { // <-- Added function
     endShape(CLOSE);
   }
 }
+
+// Bubble class for creating and updating bubble objects
+class Bubble {
+  constructor(x, y, speed) {
+    this.x = x;
+    this.y = y;
+    this.size = random(10, 30);
+    this.speed = speed;
+  }
+
+  // Update the bubble's position
+  update() {
+    this.y -= this.speed; // Move the bubble upwards
+    this.x += random(-1, 1); // Add some horizontal random movement
+
+    // Reset the bubble to the bottom once it goes off the screen
+    if (this.y < 0) {
+      this.y = height;
+      this.x = random(0, width);
+    }
+  }
+
+  // Display the bubble
+  display() {
+    noStroke();
+    fill(255, 255, 255, 150); // White with transparency for the bubbles
+    ellipse(this.x, this.y, this.size, this.size); // Draw the bubble
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
