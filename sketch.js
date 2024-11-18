@@ -1,22 +1,21 @@
+
+
+
 let fish;
 let waveOffset = 0;
 let bubbles = [];
-let fishYSpeed = 0;
-let gravity = 0.5;
-let jumpStrength = -10;
 let seaweeds = [];
 let lives = 3;
 let dayNightCycleDuration = 20000; // 20 seconds
 let startTime;
+let fishSpeed = 3; // Speed of the background movement
 
 function setup() {
-  new Canvas(500, 500);
-  displayMode('centered');
+  createCanvas(500, 500);
   startTime = millis(); // Initialize the start time
 
   // Create the fish sprite
-  fish = new Sprite();
-  fish.diameter = 50;
+  fish = new Sprite(width / 2, height / 2, 50, 20); // Center the fish
 
   // Define custom drawing for the fish sprite
   fish.draw = function() {
@@ -49,42 +48,11 @@ function draw() {
   // Draw waves in the background
   drawWaves();
 
-  // Make the fish move towards the mouse when clicked
-  if (mouse.presses()) {
-    fish.speed = 10;
-    fish.moveTo(mouse);
-  }
-
-  // Make the fish jump when the up arrow key is pressed
-  if (keyIsDown(UP_ARROW)) {
-    fishYSpeed = jumpStrength; // Apply the jump strength when the up arrow is pressed
-  }
-
-  // Apply gravity to make the fish fall down after jumping
-  fishYSpeed += gravity;
-
-  // Update fish's y position
-  fish.y += fishYSpeed;
-
-  // Prevent the fish from going below the water surface (bottom of the canvas)
-  if (fish.y > height - 25) {
-    fish.y = height - 25;
-    fishYSpeed = 0; // Stop downward movement when it hits the ground
-  }
-
   // Update and display the bubbles
   for (let bubble of bubbles) {
     bubble.update();
     bubble.display();
-
   }
-
-  function drawSand() {
-    noStroke();
-    fill(194, 178, 128); // Sand color
-    rect(0, height - 50, width, 50); // Draw a rectangle at the bottom
-  }
-  
 
   // Update and display seaweed
   for (let seaweed of seaweeds) {
@@ -92,8 +60,24 @@ function draw() {
     seaweed.display();
   }
 
+  // Handle fish movement based on mouse position
+  handleFishMovement();
+
   // Draw the lives in the top left corner
   drawLives();
+}
+
+// Function to handle fish movement based on mouse position
+function handleFishMovement() {
+  // Set fish's position based on the mouse's position
+  fish.x = mouseX; // Move the fish horizontally based on mouseX
+  fish.y = mouseY; // Move the fish vertically based on mouseY
+
+  // Prevent the fish from going out of bounds horizontally
+  fish.x = constrain(fish.x, 25, width - 25);
+
+  // Prevent the fish from going out of bounds vertically
+  fish.y = constrain(fish.y, 25, height - 25);
 }
 
 // Function to draw the sun in the background
@@ -104,7 +88,6 @@ function drawSun() {
   let sunX = width * cycleProgress;
   let sunY = map(sin(cycleProgress * PI), 0, 1, height / 4, height / 8); // Higher arc for the sun
 
-
   // Color changes from bright yellow (day) to darker orange (evening)
   let sunColor = color(255, map(cycleProgress, 0, 1, 200, 100), 0);
 
@@ -113,24 +96,24 @@ function drawSun() {
   ellipse(sunX, sunY, 60, 60); // Draw the sun
 }
 
-
-
-
 // Function to update the background color based on the day-night cycle
-  
+function updateBackground() {
+  let elapsed = millis() - startTime;
+  let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
 
-  function updateBackground() {
-    let elapsed = millis() - startTime;
-    let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
-  
-    // Map `colorValue` to transition between light blue (day) and dark blue (night)
-    let colorValue = map(sin(cycleProgress * TWO_PI), -1, 1, 30, 150);
-  
-    // Set background color using colorValue, with blue tones for day and night effect
-    background(colorValue, colorValue + 50, 255); // Light blue to dark blue transition
-  }  
+  // Map colorValue to transition between light blue (day) and dark blue (night)
+  let colorValue = map(sin(cycleProgress * TWO_PI), -1, 1, 30, 150);
 
+  // Set background color using colorValue, with blue tones for day and night effect
+  background(colorValue, colorValue + 50, 255); // Light blue to dark blue transition
+}
 
+// Function to draw the sand at the bottom of the screen
+function drawSand() {
+  noStroke();
+  fill(194, 178, 128); // Sand color
+  rect(0, height - 50, width, 50); // Draw a rectangle at the bottom
+}
 
 // Function to draw the lives in the top left corner
 function drawLives() {
@@ -150,14 +133,14 @@ function heart(x, y, size) {
   bezierVertex(x - size / 2, y - size / 2, x - size, y + size / 2, x, y + size);
   bezierVertex(x + size, y + size / 2, x + size / 2, y - size / 2, x, y);
   endShape(CLOSE);
-} 
+}
 
 // Function to draw waves in the background
 function drawWaves() {
   noStroke();
   fill(0, 150, 255, 100); // Semi-transparent water color
 
-  waveOffset += 0.1; // Controls wave movement speed
+  waveOffset += fishSpeed; // Controls wave movement speed
 
   for (let y = 100; y <= height; y += 20) { // Draw multiple wave lines
     beginShape();
@@ -221,16 +204,7 @@ class Seaweed {
   display() {
     stroke(0, 128, 0); // Green color for seaweed
     strokeWeight(4);
-    line(this.x, this.y, this.x, this.y + this.height); // Draw vertical seaweed lines
+    line(this.x, this.y, this.x, this.y - this.height); // Draw seaweed stalk
   }
 }
-
-
-
-
-
-
-
-
-
 
