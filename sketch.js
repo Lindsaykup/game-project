@@ -1,24 +1,25 @@
-
-
-
 let fish;
-let waveOffset = 0;
+let coins = [];
+let trash = [];
 let bubbles = [];
 let seaweeds = [];
+let points = 0;
 let lives = 3;
+let waveOffset = 0;
+let offsetX = 0; // Track fish movement on the X-axis
+let offsetY = 0; // Track fish movement on the Y-axis
 let dayNightCycleDuration = 20000; // 20 seconds
 let startTime;
-let fishSpeed = 3; // Speed of the background movement
 
 function setup() {
   createCanvas(500, 500);
-  startTime = millis(); // Initialize the start time
+  startTime = millis();
 
   // Create the fish sprite
-  fish = new Sprite(width / 2, height / 2, 50, 20); // Center the fish
+  fish = new Sprite(0, 0, 50, 20);
 
   // Define custom drawing for the fish sprite
-  fish.draw = function() {
+  fish.draw = function () {
     fill(155, 0, 255); // Body color
     ellipse(0, 0, 50, 20); // Fish body
     fill(0, 100, 200);
@@ -29,104 +30,97 @@ function setup() {
     ellipse(16, -5, 2, 2); // Pupil
   };
 
-  // Create bubbles at random positions
+  // Create coins and trash
+  for (let i = 0; i < 10; i++) {
+    coins.push(new Item(random(-width, width * 2), random(-height, height * 2), 'coin'));
+    trash.push(new Item(random(-width, width * 2), random(-height, height * 2), 'trash'));
+  }
+
+  // Create bubbles
   for (let i = 0; i < 10; i++) {
     bubbles.push(new Bubble(random(0, width), random(height - 100, height), random(1, 3)));
   }
 
-  // Create seaweed objects
+  // Create seaweed
   for (let i = 0; i < 5; i++) {
     seaweeds.push(new Seaweed(random(0, width), height - random(50, 150)));
   }
 }
 
 function draw() {
-  updateBackground(); // Update background color based on the day-night cycle
-
+  updateBackground(); // Day-night cycle background
   drawSun();
-  drawSand();
-  // Draw waves in the background
   drawWaves();
 
-  // Update and display the bubbles
-  for (let bubble of bubbles) {
-    bubble.update();
-    bubble.display();
-  }
+  translate(-offsetX + width / 2, -offsetY + height / 2);
 
-  // Update and display seaweed
+  drawSand();
+
+  // Display and update seaweed
   for (let seaweed of seaweeds) {
     seaweed.update();
     seaweed.display();
   }
 
-  // Handle fish movement based on mouse position
-  handleFishMovement();
+  // Display and update bubbles
+  for (let bubble of bubbles) {
+    bubble.update();
+    bubble.display();
+  }
 
-  // Draw the lives in the top left corner
-  drawLives();
-}
+  // Display and update coins and trash
+  for (let coin of coins) {
+    coin.display();
+    if (dist(fish.x + offsetX, fish.y + offsetY, coin.x, coin.y) < 25) {
+      points += 10;
+      coin.resetPosition();
+    }
+  }
 
-// Function to handle fish movement based on mouse position
-function handleFishMovement() {
-  // Set fish's position based on the mouse's position
-  fish.x = mouseX; // Move the fish horizontally based on mouseX
-  fish.y = mouseY; // Move the fish vertically based on mouseY
+  for (let tr of trash) {
+    tr.display();
+    if (dist(fish.x + offsetX, fish.y + offsetY, tr.x, tr.y) < 25) {
+      lives -= 1;
+      tr.resetPosition();
+    }
+  }
 
-  // Prevent the fish from going out of bounds horizontally
-  fish.x = constrain(fish.x, 25, width - 25);
+  // Move fish with arrow keys
+  if (keyIsDown(LEFT_ARROW)) offsetX -= 5;
+  if (keyIsDown(RIGHT_ARROW)) offsetX += 5;
+  if (keyIsDown(UP_ARROW)) offsetY -= 5;
+  if (keyIsDown(DOWN_ARROW)) offsetY += 5;
 
-  // Prevent the fish from going out of bounds vertically
-  fish.y = constrain(fish.y, 25, height - 25);
-}
+  // Draw the fish at the center of the screen
+  fish.x = offsetX;
+  fish.y = offsetY;
 
-// Function to draw the sun in the background
-function drawSun() {
-  let elapsed = millis() - startTime;
-  let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
-  // Position the sun higher along an arc in the sky
-  let sunX = width * cycleProgress;
-  let sunY = map(sin(cycleProgress * PI), 0, 1, height / 4, height / 8); // Higher arc for the sun
+  // Draw points and lives
+  drawHUD();
 
-  // Color changes from bright yellow (day) to darker orange (evening)
-  let sunColor = color(255, map(cycleProgress, 0, 1, 200, 100), 0);
-
-  noStroke();
-  fill(sunColor);
-  ellipse(sunX, sunY, 60, 60); // Draw the sun
-}
-
-// Function to update the background color based on the day-night cycle
-function updateBackground() {
-  let elapsed = millis() - startTime;
-  let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
-
-  // Map colorValue to transition between light blue (day) and dark blue (night)
-  let colorValue = map(sin(cycleProgress * TWO_PI), -1, 1, 30, 150);
-
-  // Set background color using colorValue, with blue tones for day and night effect
-  background(colorValue, colorValue + 50, 255); // Light blue to dark blue transition
-}
-
-// Function to draw the sand at the bottom of the screen
-function drawSand() {
-  noStroke();
-  fill(194, 178, 128); // Sand color
-  rect(0, height - 50, width, 50); // Draw a rectangle at the bottom
-}
-
-// Function to draw the lives in the top left corner
-function drawLives() {
-  fill(255, 0, 0);
-  noStroke();
-  
-  for (let i = 0; i < lives; i++) {
-    // Draw heart shapes to represent lives
-    heart(30 + i * 30, 30, 20); // Position hearts with spacing
+  // End game if lives are 0
+  if (lives <= 0) {
+    noLoop();
+    textSize(50);
+    fill(255, 0, 0);
+    text("Game Over", offsetX - width / 4, offsetY - height / 2);
   }
 }
 
-// Function to draw a heart shape
+// Draw HUD (points and lives)
+function drawHUD() {
+  noStroke();
+  fill(255);
+  textSize(20);
+  text(`Points: ${points}`, offsetX - width / 2 + 10, offsetY - height / 2 + 30);
+
+  fill(255, 0, 0);
+  for (let i = 0; i < lives; i++) {
+    heart(offsetX - width / 2 + 10 + i * 30, offsetY - height / 2 + 60, 20);
+  }
+}
+
+// Draw a heart
 function heart(x, y, size) {
   beginShape();
   vertex(x, y);
@@ -135,26 +129,27 @@ function heart(x, y, size) {
   endShape(CLOSE);
 }
 
-// Function to draw waves in the background
-function drawWaves() {
-  noStroke();
-  fill(0, 150, 255, 100); // Semi-transparent water color
+// Item class (coins and trash)
+class Item {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.size = 20;
+    this.type = type;
+  }
 
-  waveOffset += fishSpeed; // Controls wave movement speed
+  display() {
+    fill(this.type === 'coin' ? color(255, 215, 0) : color(150)); // Gold or gray
+    ellipse(this.x, this.y, this.size, this.size);
+  }
 
-  for (let y = 100; y <= height; y += 20) { // Draw multiple wave lines
-    beginShape();
-    for (let x = 0; x <= width; x += 20) {
-      let waveHeight = 10 * sin((x * 0.1) + waveOffset + y * 0.05); // Creates wave pattern
-      vertex(x, y + waveHeight);
-    }
-    vertex(width, height);
-    vertex(0, height);
-    endShape(CLOSE);
+  resetPosition() {
+    this.x = random(-width, width * 2);
+    this.y = random(-height, height * 2);
   }
 }
 
-// Bubble class for creating and updating bubble objects
+// Bubble class
 class Bubble {
   constructor(x, y, speed) {
     this.x = x;
@@ -163,48 +158,85 @@ class Bubble {
     this.speed = speed;
   }
 
-  // Update the bubble's position
   update() {
-    this.y -= this.speed; // Move the bubble upwards
-    this.x += random(-1, 1); // Add some horizontal random movement
-
-    // Reset the bubble to the bottom once it goes off the screen
+    this.y -= this.speed;
+    this.x += random(-1, 1);
     if (this.y < 0) {
       this.y = height;
       this.x = random(0, width);
     }
   }
 
-  // Display the bubble
   display() {
     noStroke();
-    fill(255, 255, 255, 150); // White with transparency for the bubbles
-    ellipse(this.x, this.y, this.size, this.size); // Draw the bubble
+    fill(255, 255, 255, 150);
+    ellipse(this.x, this.y, this.size, this.size);
   }
 }
 
-// Seaweed class for creating seaweed objects
+// Seaweed class
 class Seaweed {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.height = random(50, 150); // Random height for the seaweed
+    this.height = random(50, 150);
   }
 
-  // Update the seaweed's position (falling effect)
   update() {
-    this.y += 1; // Move downwards to simulate swimming past
+    this.y += 1;
     if (this.y > height) {
-      this.y = height - random(50, 150); // Reset to a new position
-      this.x = random(0, width); // Random x position
+      this.y = height - random(50, 150);
+      this.x = random(0, width);
     }
   }
 
-  // Display the seaweed
   display() {
-    stroke(0, 128, 0); // Green color for seaweed
+    stroke(0, 128, 0);
     strokeWeight(4);
-    line(this.x, this.y, this.x, this.y - this.height); // Draw seaweed stalk
+    line(this.x, this.y, this.x, this.y - this.height);
   }
 }
 
+// Waves
+function drawWaves() {
+  noStroke();
+  fill(0, 150, 255, 100);
+  waveOffset += 1;
+  for (let y = 100; y <= height; y += 20) {
+    beginShape();
+    for (let x = 0; x <= width; x += 20) {
+      let waveHeight = 10 * sin((x * 0.1) + waveOffset + y * 0.05);
+      vertex(x, y + waveHeight);
+    }
+    vertex(width, height);
+    vertex(0, height);
+    endShape(CLOSE);
+  }
+}
+
+// Sun
+function drawSun() {
+  let elapsed = millis() - startTime;
+  let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
+  let sunX = width * cycleProgress;
+  let sunY = map(sin(cycleProgress * PI), 0, 1, height / 4, height / 8);
+  let sunColor = color(255, map(cycleProgress, 0, 1, 200, 100), 0);
+  noStroke();
+  fill(sunColor);
+  ellipse(sunX, sunY, 60, 60);
+}
+
+// Background
+function updateBackground() {
+  let elapsed = millis() - startTime;
+  let cycleProgress = (elapsed % dayNightCycleDuration) / dayNightCycleDuration;
+  let colorValue = map(sin(cycleProgress * TWO_PI), -1, 1, 30, 150);
+  background(colorValue, colorValue + 50, 255);
+}
+
+// Sand
+function drawSand() {
+  noStroke();
+  fill(194, 178, 128);
+  rect(0, height - 50, width, 50);
+}
